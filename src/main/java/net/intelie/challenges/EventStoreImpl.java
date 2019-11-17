@@ -1,30 +1,29 @@
 package net.intelie.challenges;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.DuplicateFormatFlagsException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-public class EventStoreImpl implements EventStore
-{
+public class EventStoreImpl implements EventStore {
 	
-	private List<Event> listEvent;
-	private Set<Event> newList;
 	private Map<String, List<Event>> mapEvent;
-	Event currentEvent;
-	
-	
 
 	public EventStoreImpl() {
-		mapEvent = new HashMap<>();
+		mapEvent = new ConcurrentHashMap<>();
 	}
 
 	@Override
-	public void insert(Event event) {
-		currentEvent = event;
+	public synchronized void insert(Event event) {
 		if (!mapEvent.containsKey(event.type())) {
-			List<Event> listEvent = new ArrayList<>();
+			List<Event> listEvent = new Vector<>();
 			listEvent.add(event);
 			mapEvent.put(event.type(), listEvent);
 		} else {
@@ -33,21 +32,24 @@ public class EventStoreImpl implements EventStore
 	}
 
 	@Override
-	public void removeAll(String type) {
-		listEvent.remove(type);
+	public synchronized void removeAll(String type) {
+		mapEvent.get(type).clear();
+		System.out.println(mapEvent);
 	}
 
 	@Override
-	public EventIterator query(String type, long startTime, long endTime) {
-		return null;
-	}
-
-	public List<Event> getListEvent() {
-		return listEvent;
-	}
-
-	public void setListEvent(List<Event> listEvent) {
-		this.listEvent = listEvent;
+	public EventIteratorImpl query(String type, long startTime, long endTime) {
+		Instant before = Instant.now();
+		List<Event> resultado = mapEvent.get(type)
+				.stream()
+				.parallel()
+				.filter(e -> e.timestamp() >= startTime && e.timestamp() < endTime)
+				.collect(Collectors.toList());
+		Instant after = Instant.now();
+		Duration duration = Duration.between(before, after);
+		System.out.println("time = " + duration.toMillis() + " ms ");
+		System.out.println(resultado);
+		return new EventIteratorImpl(resultado);
 	}
 
 	public Map<String, List<Event>> getMapEvent() {
@@ -56,14 +58,6 @@ public class EventStoreImpl implements EventStore
 
 	public void setMapEvent(Map<String, List<Event>> mapEvent) {
 		this.mapEvent = mapEvent;
-	}
-
-	public Event getCurrentEvent() {
-		return currentEvent;
-	}
-
-	public void setCurrentEvent(Event currentEvent) {
-		this.currentEvent = currentEvent;
 	}
 	
 }

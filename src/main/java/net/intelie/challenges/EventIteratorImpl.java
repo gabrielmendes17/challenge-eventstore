@@ -1,20 +1,19 @@
 package net.intelie.challenges;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EventIteratorImpl implements EventIterator {
 	
-	private Event event = null;
-	private boolean hasNext;
-	Iterator<Event> eventAsIterator;
-	EventStoreImpl eventStore;
-	Map<String, Integer> ultimo;
-
-	public EventIteratorImpl(EventStoreImpl eventStore) {
-		this.eventStore = eventStore;
-		ultimo = new HashMap<>();
+	private Event currentEvent = null;
+	private List<Event> events;
+	private AtomicInteger position;
+	boolean hasNext = false;
+	private EventStoreImpl store;
+	
+	public EventIteratorImpl(List<Event> events) {
+		position = new AtomicInteger();
+		this.events = events;
 	}
 
 	@Override
@@ -24,34 +23,45 @@ public class EventIteratorImpl implements EventIterator {
 	}
 
 	@Override
-	public boolean moveNext() {
-		if (eventStore.getMapEvent().size() > 0) {
-			event = eventStore.getMapEvent().get(eventStore.getCurrentEvent().type()).get(0);
-			System.out.println(ultimo.get(event.type()));
-			if (ultimo.containsKey(eventStore.getCurrentEvent().type())) {
-				ultimo.put(eventStore.getCurrentEvent().type(), ultimo.get(eventStore.getCurrentEvent().type())+1);
-				return hasNext = true;
-			} else {
-				ultimo.put(event.type(), 1);
-				return hasNext = true;
-			}
-		} else {
-			
-			
-			}
-		
-		return hasNext = false;
+	public synchronized boolean moveNext() {
+		if (position.get() >= events.size() || events.get(position.get()) == null) {
+            return hasNext = false;
+        } else {
+        	currentEvent = events.get(position.get());
+			position.incrementAndGet();
+            return hasNext = true;
+        }
 	}
 
 	@Override
 	public Event current() {
-		if (event == null || !hasNext) throw new IllegalStateException();
-		return event;
+		if (hasNext) {
+			return currentEvent;
+		} 
+		throw new IllegalStateException();
 	}
 
 	@Override
-	public void remove() {
-		eventAsIterator.remove();
+	public synchronized void remove() {
+		if (hasNext) {
+			events.remove(currentEvent);
+			store.getMapEvent().get(currentEvent.type()).remove(currentEvent);
+			System.out.println(store);
+		} else {
+			throw new IllegalStateException();
+		}
 	}
 
+	public EventStoreImpl getStore() {
+		return store;
+	}
+
+	public void setStore(EventStoreImpl store) {
+		this.store = store;
+	}
+
+	public List<Event> getEvents() {
+		return events;
+	}
+	
 }
