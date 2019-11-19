@@ -3,17 +3,17 @@ package net.intelie.challenges;
 public class TaskAddElement implements Runnable {
 
 	EventStoreImpl store;
-	String tipo;
+	String type;
 	
-	public TaskAddElement(EventStoreImpl store, String tipo) {
+	public TaskAddElement(EventStoreImpl store, String type) {
 		this.store = store;
-		this.tipo = tipo;
+		this.type = type;
 	}
 
 	@Override
 	public void run() {
 		for (int i = 0; i < 100; i++) {
-			Event event = new Event(tipo, i); 
+			Event event = new Event(type, i); 
 			store.insert(event);
 		}
 	}

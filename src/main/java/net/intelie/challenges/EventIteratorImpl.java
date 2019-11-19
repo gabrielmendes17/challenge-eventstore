@@ -46,7 +46,6 @@ public class EventIteratorImpl implements EventIterator {
 		if (hasNext) {
 			events.remove(currentEvent);
 			store.getMapEvent().get(currentEvent.type()).remove(currentEvent);
-			System.out.println(store);
 		} else {
 			throw new IllegalStateException();
 		}

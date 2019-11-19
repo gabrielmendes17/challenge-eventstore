@@ -18,22 +18,12 @@ public class EventTest {
     
     @Test
     public void eventCreate() throws Exception {
-//        Event event1 = new Event("PAGAMENTO", 1573820520); //10h
-//        Event event11 = new Event("PAGAMENTO", 1573827720); //12h
-//        Event event111 = new Event("PAGAMENTO", 1573834920); //14h
-//        Event event1111 = new Event("PAGAMENTO", 1573843661); //16h
         EventStoreImpl eventStore = new EventStoreImpl();
         EventIteratorImpl eventIterator;
         
     	new Thread(new TaskAddElement(eventStore, "PAYMENT")).run();
     	new Thread(new TaskAddElement(eventStore, "BILLING")).run();
     	new Thread(new TaskAddElement(eventStore, "ORDINARY EXPENSES")).run();
-//    	eventStore.insert(event1);
-//    	eventStore.insert(event11);
-//    	eventStore.insert(event111);
-//    	eventStore.insert(event1111);
-//    	
-    	
     	
     	eventIterator = eventStore.query("PAYMENT", 10, 30);
     	eventIterator.setStore(eventStore);
